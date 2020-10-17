@@ -1,11 +1,11 @@
-local function put_food(self) -- <1>
-    self.food = {x = math.random(2, 47), y = math.random(2, 47)} -- <2>
-    local tile = tilemap.get_tile("#grid", "layer1", newhead.x, newhead.y) -- <2>
+local function put_food(self)
+    local food = {x = math.random(2, 47), y = math.random(2, 47)}
+    local tile = tilemap.get_tile("#grid", "layer1", food.x, food.y)
 
-    if tile == 2 or tile == 4 then
-        put_food(self)
+    if tile == 0 then
+        tilemap.set_tile("#grid", "layer1", food.x, food.y, 3)
     else
-        tilemap.set_tile("#grid", "layer1", self.food.x, self.food.y, 3) -- <3>
+        put_food(self)
     end
 end
 
@@ -20,14 +20,30 @@ function init(self)
     self.speed = 7.0
     self.alive = true -- <1>
     self.t = 0
+    self.score = 0
+    self.debug = "ok"
 
     math.randomseed(socket.gettime())
     put_food(self)
 end
 
 function update(self, dt)
+    local color_green = vmath.vector4(0, 1, 0, 1)
+    msg.post("@render:", "draw_debug_text", {
+        text = self.score,
+        position = vmath.vector3(1300, 1450, 0),
+        color = color_green
+    })
+    local color_yellow = vmath.vector4(1, 1, 0, 1)
+    msg.post("@render:", "draw_debug_text", {
+        text = self.debug,
+        position = vmath.vector3(100, 1450, 0),
+        color = color_yellow
+    })
+    
     self.t = self.t + dt
-    if self.t >= 1.0 / self.speed and self.alive then -- <1>
+    if self.t >= 1.0 / self.speed and self.alive then
+        self.score = self.score + (self.speed * 10)
         local newdir = table.remove(self.dirqueue, 1)
 
         if newdir then
@@ -40,15 +56,17 @@ function update(self, dt)
 
         table.insert(self.segments, newhead)
 
-        local tile = tilemap.get_tile("#grid", "layer1", newhead.x, newhead.y) -- <2>
+        local tile = tilemap.get_tile("#grid", "layer1", newhead.x, newhead.y)
 
         if tile == 2 or tile == 4 then
-            self.alive = false -- <3>
+            self.alive = false
+            self.score = "GAME OVER"
         elseif tile == 3 then
-            self.speed = self.speed + 1 -- <4>
+            self.speed = self.speed + 1
+            self.score = self.score + (math.floor(math.random() * 100) * 100 * self.speed)
             put_food(self)
         else
-            local tail = table.remove(self.segments, 1) -- <5>
+            local tail = table.remove(self.segments, 1)
             tilemap.set_tile("#grid", "layer1", tail.x, tail.y, 1)
         end
 
