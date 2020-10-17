@@ -18,7 +18,7 @@ function init(self)
     self.dir = {x = 1, y = 0}
     self.dirqueue = {}
     self.speed = 7.0
-    self.alive = true -- <1>
+    self.alive = true
     self.t = 0
     self.score = 0
     self.debug = "ok"
